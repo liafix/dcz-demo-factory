@@ -11,6 +11,13 @@ class PilotTests(unittest.TestCase):
     def lead(self):
         return json.loads(FIXTURE.read_text(encoding="utf-8"))
 
+    def test_draft_entry_fails_before_network(self):
+        from unittest.mock import patch
+        args=Namespace(input=str(FIXTURE),stage="draft",output="out",url="https://example.vercel.app")
+        with patch("factory.worker.validate",return_value="key"), patch("factory.worker.gmail_draft") as draft:
+            with self.assertRaisesRegex(Blocked,"LIVE_GATE_BLOCKED"): run(args)
+            draft.assert_not_called()
+
     def test_slug(self):
         self.assertEqual(slugify("Kaderníctvo Krystal"), "kadernictvo-krystal")
 

@@ -1,10 +1,10 @@
-"""Read-only Airtable reconciliation adapter. Fail-closed; no automatic sourcing claims."""
+"""Airtable reconciliation and verified checkpoint adapter. Fail-closed; no automatic sourcing claims."""
 import json
 import os
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
-TABLES = ("Lead Candidates", "Lead Factory Events", "Opportunities", "Activities", "Suppressions")
+TABLES = ("System Config", "Lead Candidates", "Lead Factory Events", "Opportunities", "Activities", "Suppressions")
 FACTORY_OWNER = "Lead Demo Factory"
 
 class CRMError(RuntimeError):
@@ -19,11 +19,11 @@ class AirtableCRM:
             raise CRMError("Airtable token or base ID unavailable; do not use production credentials in Git")
         if not self.base_id.startswith("app"):
             raise CRMError("Invalid Airtable base ID")
-    def request(self, path, query=None):
-        url = "https://api.airtable.com/v0/" + quote(self.base_id) + "/" + quote(path)
+    def request(self, path, query=None, method="GET", payload=None):
+        url = "https://api.airtable.com/v0/" + quote(self.base_id) + "/" + quote(path, safe="/")
         if query:
             url += "?" + urlencode(query)
-        req = Request(url, headers={"Authorization":"Bearer "+self.token,"Accept":"application/json","User-Agent":"DCZ-Revenue-Pilot/1.0"})
+        req = Request(url, method=method, data=json.dumps(payload).encode() if payload is not None else None, headers={"Authorization":"Bearer "+self.token,"Accept":"application/json","Content-Type":"application/json","User-Agent":"DCZ-Revenue-Pilot/1.0"})
         with self.transport(req, timeout=20) as resp:
             return json.loads(resp.read())
     def rows(self, table, max_pages=20):
@@ -43,6 +43,28 @@ class AirtableCRM:
             if not page:
                 return out
         raise CRMError("CRM pagination limit reached: "+table)
+    def checkpoint(self, table, record_id, fields):
+        """Update an existing verified record only, then verify every written field.
+
+        Field names must come from the existing base schema; never auto-create tables.
+        Repeating the same update is idempotent. An ambiguous write must be read back
+        before retry; this method deliberately does not automatically retry writes.
+        """
+        if table not in TABLES or not isinstance(record_id, str) or not record_id.startswith("rec") or not record_id.isalnum():
+            raise CRMError("Expected existing table and Airtable record ID")
+        if not isinstance(fields, dict) or not fields:
+            raise CRMError("Checkpoint fields required")
+        path = table + "/" + record_id
+        before = self.request(path)
+        if before.get("id") != record_id:
+            raise CRMError("Record identity mismatch")
+        if any(before.get("fields", {}).get(k) != v for k,v in fields.items()):
+            self.request(path, method="PATCH", payload={"fields":fields, "typecast":False})
+        after = self.request(path)
+        if after.get("id") != record_id or any(after.get("fields", {}).get(k) != v for k,v in fields.items()):
+            raise CRMError("Checkpoint read-back mismatch; reconcile before retry")
+        return after
+
     def audit(self):
         by_table = {table:self.rows(table) for table in TABLES}
         suppressions=set()

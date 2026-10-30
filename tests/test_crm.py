@@ -36,6 +36,32 @@ class CRMTests(unittest.TestCase):
         self.assertEqual(report["write_actions"],0)
         self.assertTrue(any("offset=NEXT" in url for url in calls))
 
+    def test_checkpoint_readback_and_repeat(self):
+        a=AirtableCRM(base_id="app123",token="fake")
+        state={"id":"rec123", "fields":{}}
+        writes=[]
+        def request(path, query=None, method="GET", payload=None):
+            if method=="PATCH":
+                writes.append(payload)
+                state["fields"].update(payload["fields"])
+            return state
+        a.request=request
+        a.checkpoint("Lead Candidates","rec123",{"Factory Status":"BLOCKED"})
+        a.checkpoint("Lead Candidates","rec123",{"Factory Status":"BLOCKED"})
+        self.assertEqual(len(writes),1)
+
+    def test_checkpoint_mismatch_blocks(self):
+        a=AirtableCRM(base_id="app123",token="fake")
+        a.request=Mock(return_value={"id":"rec123","fields":{}})
+        with self.assertRaises(CRMError):
+            a.checkpoint("Lead Candidates","rec123",{"Factory Status":"BLOCKED"})
+
+    def test_checkpoint_invalid_identity_no_request(self):
+        a=AirtableCRM(base_id="app123",token="fake")
+        a.request=Mock()
+        with self.assertRaises(CRMError): a.checkpoint("Lead Candidates","../other",{"x":1})
+        a.request.assert_not_called()
+
     def test_free_text_is_not_verification(self):
         with self.assertRaises(CRMError):
             AirtableCRM.verified_input({"fields":{"Company":"Business","Website / Booking Evidence":"Google search did not find website"}})

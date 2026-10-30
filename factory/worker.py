@@ -246,11 +246,7 @@ def run(args):
                   "assets":"PASS","mobile":"UNTESTED","visual":"UNTESTED",
                   "interaction":"UNTESTED","accessibility":"UNTESTED","deploy":"UNTESTED"}}
     elif args.stage == "draft":
-        if lead.get("synthetic"):
-            raise Blocked("Never draft for synthetic lead")
-        check_public_preview(args.url)
-        draft_id, created = gmail_draft(lead, args.url, hashlib.sha256(key.encode()).hexdigest())
-        report = {"result":"DRAFT_VERIFIED","draft_id":draft_id,"created":created,"send_count":0}
+        raise Blocked("LIVE_GATE_BLOCKED: standalone draft stage lacks fresh CRM reconciliation, sent-mail checks, browser QA and deployment commit verification")
     else: raise Blocked("Unsupported stage")
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return report
