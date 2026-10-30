@@ -1,0 +1,65 @@
+{
+  "synthetic": true,
+  "company": "Modelové štúdio",
+  "city": "Testovacie mesto",
+  "segment": "NO_WEBSITE",
+  "score": 90,
+  "commercial_score": 13,
+  "status": "QUALIFIED",
+  "owner_worker": "Lead Demo Factory",
+  "suppressed": false,
+  "contact": {
+    "phone": "+421 000 000 000",
+    "verified": true,
+    "email_verified": false
+  },
+  "verification": {
+    "human_reviewed": false,
+    "no_owned_website": true,
+    "candidate_domains": [],
+    "activity_signals": [
+      {
+        "type": "social_activity",
+        "url": "https://example.invalid/social/a",
+        "date": "2026-10-25"
+      },
+      {
+        "type": "booking_activity",
+        "url": "https://example.invalid/booking/b",
+        "date": "2026-10-26"
+      }
+    ],
+    "checks": [
+      {
+        "type": "name_city",
+        "url": "https://example.invalid/name_city",
+        "checked_at": "2026-10-30"
+      },
+      {
+        "type": "listing_website",
+        "url": "https://example.invalid/listing_website",
+        "checked_at": "2026-10-30"
+      },
+      {
+        "type": "facebook_about",
+        "url": "https://example.invalid/facebook_about",
+        "checked_at": "2026-10-30"
+      },
+      {
+        "type": "instagram_bio",
+        "url": "https://example.invalid/instagram_bio",
+        "checked_at": "2026-10-30"
+      },
+      {
+        "type": "phone_search",
+        "url": "https://example.invalid/phone_search",
+        "checked_at": "2026-10-30"
+      },
+      {
+        "type": "email_domain_search",
+        "url": "https://example.invalid/email_domain_search",
+        "checked_at": "2026-10-30"
+      }
+    ]
+  }
+}
